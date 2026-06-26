@@ -1,0 +1,18 @@
+{
+  "name": "School",
+  "background_colors": ["#EAF7FF", "#EEF9F0", "#FFFDF3", "#F2F7FF"],
+  "title_colors": ["#2F80ED", "#2E7D5B", "#4A5568"],
+  "subtitle_colors": ["#555555", "#6B7280"],
+  "titles": ["今日课堂记录", "认真学习时光", "课堂成长记录", "学习小结"],
+  "subtitles": ["今天也有认真听讲", "每一次练习都在进步", "课堂表现值得记录", "保持专注，继续加油！"],
+  "english_slogans": ["Blessings for your everyday!", "Happy happy everyday!", "Shine bright every day!", "Learning brings little joys!"],
+  "sticker_dir": "school",
+  "sticker_count_range": [5, 7],
+  "background_dir": "school",
+  "frame_dir": "school",
+  "use_background_image": true,
+  "use_frame_image": true,
+  "photo_frame_dir": "school",
+  "use_photo_frame": true,
+  "photo_frame_probability": 0.65
+}

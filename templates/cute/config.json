@@ -1,0 +1,18 @@
+{
+  "name": "Cute",
+  "background_colors": ["#FFF7E8", "#FDEFF4", "#EAF7FF", "#F3F8E8"],
+  "title_colors": ["#FF7B8A", "#6AA9FF", "#FFB347"],
+  "subtitle_colors": ["#666666", "#888888"],
+  "titles": ["今日课堂记录", "快乐学习时光", "今日精彩瞬间", "成长小记"],
+  "subtitles": ["今天也有认真学习哦～", "每一次努力都值得被记录", "课堂上的精彩瞬间", "继续加油，越来越棒！"],
+  "english_slogans": ["Blessings for your everyday!", "Happy happy everyday!", "Shine bright every day!", "Learning brings little joys!"],
+  "sticker_dir": "cute",
+  "sticker_count_range": [5, 7],
+  "background_dir": "cute",
+  "frame_dir": "cute",
+  "use_background_image": true,
+  "use_frame_image": true,
+  "photo_frame_dir": "cute",
+  "use_photo_frame": true,
+  "photo_frame_probability": 0.7
+}

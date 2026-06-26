@@ -1,0 +1,18 @@
+{
+  "name": "Art",
+  "background_colors": ["#FFF0D9", "#F5E8FF", "#FFF7C8", "#FFEDE1"],
+  "title_colors": ["#FF7A45", "#8E6AD8", "#E85D75"],
+  "subtitle_colors": ["#6B5B53", "#7A6A8A"],
+  "titles": ["创意美术时光", "小小艺术家", "今日作品分享", "灵感课堂记录"],
+  "subtitles": ["用色彩记录想象力", "每一笔都很有创意", "今天的作品很精彩", "把灵感画进课堂里"],
+  "english_slogans": ["Blessings for your everyday!", "Happy happy everyday!", "Shine bright every day!", "Learning brings little joys!"],
+  "sticker_dir": "art",
+  "sticker_count_range": [5, 7],
+  "background_dir": "art",
+  "frame_dir": "art",
+  "use_background_image": true,
+  "use_frame_image": true,
+  "photo_frame_dir": "simple",
+  "use_photo_frame": true,
+  "photo_frame_probability": 0.6
+}

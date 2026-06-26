@@ -1,0 +1,1 @@
+﻿"""Core collage engine package."""
