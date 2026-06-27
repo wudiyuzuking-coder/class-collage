@@ -48,6 +48,20 @@ python main.py
 output/result.png
 ```
 
+Windows 本地如果 `python` 命令被 Microsoft Store / WindowsApps 占位入口抢占，可以使用项目自带脚本：
+
+```bat
+run.bat
+```
+
+PowerShell 也可以使用：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+脚本默认调用 `C:\python312\python.exe`。如果你的 Python 安装在其他位置，可以修改 `run.bat` 或 `run.ps1` 里的路径。
+
 如果 `input/` 或 `output/` 不存在，程序会自动创建。图片少于 2 张时会提示：
 
 ```text
