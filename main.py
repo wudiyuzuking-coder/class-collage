@@ -2,14 +2,12 @@ import argparse
 from pathlib import Path
 
 from engine.filter import DEFAULT_FILTER, SUPPORTED_FILTERS
+from engine.layout import get_all_layouts
 from engine.render import render_class_record
 from engine.template import list_templates, template_exists
 
 
-# 项目根目录，使用 pathlib 保证 Windows 和 macOS 都能正常处理路径。
 ROOT_DIR = Path(__file__).resolve().parent
-
-# 当前阶段支持读取的图片格式。
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
@@ -27,6 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--title", default=None, help="自定义顶部标题")
     parser.add_argument("--subtitle", default=None, help="自定义底部文案")
     parser.add_argument("--theme", default="cute", help="模板主题名称，默认 cute")
+    parser.add_argument("--layout", default="auto", help="图片布局名称，默认 auto")
     parser.add_argument(
         "--sticker-theme",
         default="random",
@@ -35,7 +34,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--photo-frame-theme",
         default="random",
-        help="照片相框来源：random、none、cute、school、summer、game、simple",
+        help="照片相框来源：random、none、cartoon、cute、school、summer、game、simple",
     )
     parser.add_argument(
         "--no-photo-frame",
@@ -65,11 +64,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="列出当前可用模板并退出",
     )
+    parser.add_argument(
+        "--list-layouts",
+        action="store_true",
+        help="列出 2~6 张图片支持的全部布局并退出",
+    )
     return parser.parse_args()
 
 
 def project_path(path_text: str) -> Path:
-    """把相对路径转换为项目内路径，绝对路径则原样使用。"""
+    """相对路径按项目根目录解析，绝对路径保持不变。"""
     path = Path(path_text)
     if path.is_absolute():
         return path
@@ -77,14 +81,11 @@ def project_path(path_text: str) -> Path:
 
 
 def find_input_images(input_dir: Path) -> list[Path]:
-    """读取输入目录下的图片路径。"""
+    """读取输入目录下支持格式的图片路径。"""
     if input_dir.exists() and not input_dir.is_dir():
         raise NotADirectoryError(f"输入路径不是文件夹：{input_dir}")
 
-    # 自动创建输入目录，首次运行 python main.py 也不会因为目录不存在而报错。
     input_dir.mkdir(parents=True, exist_ok=True)
-
-    # 只读取当前目录下的图片文件，按文件名排序让输出结果稳定。
     return sorted(
         path
         for path in input_dir.iterdir()
@@ -99,8 +100,18 @@ def print_available_themes() -> None:
         print(f"- {theme}")
 
 
+def print_available_layouts() -> None:
+    """打印 2~6 张图片支持的布局列表。"""
+    print("可用布局：")
+    for image_count, layout_names in get_all_layouts().items():
+        print()
+        print(f"{image_count} 张图：")
+        for layout_name in layout_names:
+            print(f"- {layout_name}")
+
+
 def normalize_cli_filter(filter_name: str) -> str:
-    """校验命令行滤镜参数，未知滤镜回退 soft。"""
+    """校验命令行滤镜参数，未知滤镜回退到 soft。"""
     safe_name = (filter_name or DEFAULT_FILTER).lower()
     if safe_name not in SUPPORTED_FILTERS:
         print(f"未识别的滤镜 {filter_name}，已使用默认滤镜 {DEFAULT_FILTER}")
@@ -114,6 +125,9 @@ def main() -> None:
 
     if args.list_themes:
         print_available_themes()
+        return
+    if args.list_layouts:
+        print_available_layouts()
         return
 
     theme = args.theme or "cute"
@@ -138,8 +152,8 @@ def main() -> None:
         print(error)
         return
 
-    if len(image_paths) < 1:
-        print("请至少放入 1 张图片")
+    if len(image_paths) < 2:
+        print("请至少放入 2 张图片")
         return
 
     result_path = render_class_record(
@@ -153,6 +167,7 @@ def main() -> None:
         sticker_theme=args.sticker_theme,
         photo_frame_theme=args.photo_frame_theme,
         no_photo_frame=args.no_photo_frame,
+        layout_name=args.layout,
     )
     print(f"已生成图片：{result_path}")
 

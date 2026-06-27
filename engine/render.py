@@ -53,6 +53,7 @@ def _paste_cropped_image(
     filter_name: str,
     auto_enhance: bool,
     photo_frame_path: Optional[Path],
+    rotate_card: bool = False,
 ) -> None:
     """读取图片、自动优化、应用滤镜、居中裁剪，并贴到指定区域。"""
     with Image.open(image_path) as source:
@@ -69,7 +70,26 @@ def _paste_cropped_image(
         photo_card = create_photo_card(cropped, (box.width, box.height))
         if photo_frame_path is not None:
             photo_card = apply_photo_frame(photo_card, photo_frame_path)
-        canvas.paste(photo_card, (box.x, box.y), photo_card)
+        if rotate_card:
+            # 4 张及以上时让照片卡片随机倾斜；expand=True 可以避免旋转后被裁切。
+            angle = random.uniform(-20, 20)
+            photo_card = photo_card.rotate(
+                angle,
+                resample=Image.Resampling.BICUBIC,
+                expand=True,
+                fillcolor=(255, 255, 255, 0),
+            )
+
+        paste_x = box.x
+        paste_y = box.y
+        if rotate_card:
+            # 旋转后尺寸会变大，按原照片框中心对齐，并限制在画布范围内。
+            paste_x = box.x + (box.width - photo_card.width) // 2
+            paste_y = box.y + (box.height - photo_card.height) // 2
+            paste_x = max(0, min(paste_x, canvas.width - photo_card.width))
+            paste_y = max(0, min(paste_y, canvas.height - photo_card.height))
+
+        canvas.paste(photo_card, (paste_x, paste_y), photo_card)
 
 
 def _resolve_photo_frame_dir(
@@ -116,6 +136,7 @@ def render_class_record(
     sticker_theme: Optional[str] = "random",
     photo_frame_theme: Optional[str] = "random",
     no_photo_frame: bool = False,
+    layout_name: str = "auto",
 ) -> Path:
     """生成课堂记录拼图。"""
     # 超过 6 张时只取前 6 张，避免布局超出当前设计范围。
@@ -128,13 +149,18 @@ def render_class_record(
         canvas_width=CANVAS_SIZE[0],
         image_area_top=IMAGE_AREA_TOP,
         image_area_bottom=IMAGE_AREA_BOTTOM,
+        layout_name=layout_name,
     )
-    photo_frame_dir = _resolve_photo_frame_dir(
-        template,
-        theme,
-        photo_frame_theme,
-        no_photo_frame,
-    )
+    use_rotated_cards = len(selected_paths) >= 4
+    photo_frame_dir = None
+    if not use_rotated_cards:
+        # 4 张及以上会随机倾斜照片卡片，关闭 PNG 照片相框，避免相框漏图或画面过挤。
+        photo_frame_dir = _resolve_photo_frame_dir(
+            template,
+            theme,
+            photo_frame_theme,
+            no_photo_frame,
+        )
     forced_photo_frame = bool(photo_frame_theme and photo_frame_theme.lower() not in {"random", "none"})
     photo_frame_probability = template.get("photo_frame_probability", 0.6)
     if not isinstance(photo_frame_probability, (int, float)):
@@ -152,6 +178,7 @@ def render_class_record(
             filter_name,
             auto_enhance,
             photo_frame_path,
+            use_rotated_cards,
         )
 
     add_random_stickers(canvas, template, photo_boxes, sticker_theme=sticker_theme)

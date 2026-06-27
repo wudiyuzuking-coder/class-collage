@@ -29,9 +29,9 @@ DEFAULT_TEMPLATE: dict[str, Any] = {
     "frame_dir": "cute",
     "use_background_image": False,
     "use_frame_image": False,
-    "photo_frame_dir": "cute",
+    "photo_frame_dir": "cartoon",
     "use_photo_frame": False,
-    "photo_frame_probability": 0.6,
+    "photo_frame_probability": 1.0,
 }
 
 ROOT_DIR = Path(__file__).resolve().parents[1]

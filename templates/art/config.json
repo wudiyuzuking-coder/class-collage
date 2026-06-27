@@ -12,7 +12,7 @@
   "frame_dir": "art",
   "use_background_image": true,
   "use_frame_image": true,
-  "photo_frame_dir": "simple",
+  "photo_frame_dir": "cartoon",
   "use_photo_frame": true,
-  "photo_frame_probability": 0.6
+  "photo_frame_probability": 1.0
 }

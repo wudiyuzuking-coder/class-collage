@@ -1,3 +1,6 @@
 __pycache__/
 *.py[cod]
 output/result.png
+tmp/
+input/*
+!input/.gitkeep
