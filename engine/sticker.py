@@ -241,3 +241,95 @@ def add_random_stickers(
             continue
 
     return canvas
+
+
+def _clamp_position(
+    x: int,
+    y: int,
+    sticker_size: tuple[int, int],
+    canvas_size: tuple[int, int],
+) -> tuple[int, int]:
+    """把贴纸坐标限制在画布范围内，避免旋转后越界。"""
+    sticker_width, sticker_height = sticker_size
+    canvas_width, canvas_height = canvas_size
+    x = max(0, min(x, canvas_width - sticker_width))
+    y = max(0, min(y, canvas_height - sticker_height))
+    return x, y
+
+
+def _single_image_edge_position(
+    image_rect: tuple[int, int, int, int],
+    sticker_size: tuple[int, int],
+    canvas_size: tuple[int, int],
+    rng: random.Random,
+) -> tuple[int, int]:
+    """单图模式：把贴纸放在照片边缘附近，而不是照片中心。"""
+    image_left, image_top, image_right, image_bottom = image_rect
+    sticker_width, sticker_height = sticker_size
+    edge = rng.choice(("left", "right", "top", "bottom"))
+
+    if edge == "left":
+        x = image_left - sticker_width // 2
+        y = rng.randint(image_top + 24, max(image_top + 24, image_bottom - sticker_height - 24))
+    elif edge == "right":
+        x = image_right - sticker_width // 2
+        y = rng.randint(image_top + 24, max(image_top + 24, image_bottom - sticker_height - 24))
+    elif edge == "top":
+        x = rng.randint(image_left + 24, max(image_left + 24, image_right - sticker_width - 24))
+        y = image_top + 8
+    else:
+        x = rng.randint(image_left + 24, max(image_left + 24, image_right - sticker_width - 24))
+        y = image_bottom - sticker_height // 2
+
+    return _clamp_position(x, y, sticker_size, canvas_size)
+
+
+def add_single_image_edge_stickers(
+    canvas: Image.Image,
+    theme_config: dict[str, Any],
+    image_rect: tuple[int, int, int, int],
+    sticker_theme: Optional[str] = None,
+    min_count: int = 3,
+    max_count: int = 4,
+    min_size: int = 64,
+    max_size: int = 120,
+) -> Image.Image:
+    """单图模式贴纸：随机 3~4 个，放在照片四周边缘，不重复使用。"""
+    sticker_paths = load_stickers_by_theme(theme_config, sticker_theme)
+    if not sticker_paths:
+        return canvas
+
+    rng = random.Random()
+    sticker_count = min(rng.randint(min_count, max_count), len(sticker_paths))
+    available_stickers = sticker_paths[:]
+    rng.shuffle(available_stickers)
+    placed_rects: list[tuple[int, int, int, int]] = []
+
+    while len(placed_rects) < sticker_count and available_stickers:
+        sticker_path = available_stickers.pop()
+        sticker_size = rng.randint(min_size, max_size)
+
+        try:
+            with Image.open(sticker_path) as sticker:
+                sticker = sticker.convert("RGBA")
+                sticker.thumbnail((sticker_size, sticker_size), Image.Resampling.LANCZOS)
+                sticker = rotate_sticker_randomly(sticker)
+
+                for _ in range(80):
+                    x, y = _single_image_edge_position(
+                        image_rect=image_rect,
+                        sticker_size=sticker.size,
+                        canvas_size=canvas.size,
+                        rng=rng,
+                    )
+                    rect = (x, y, x + sticker.width, y + sticker.height)
+                    if any(_overlaps(rect, placed) for placed in placed_rects):
+                        continue
+
+                    canvas.paste(sticker, (x, y), sticker)
+                    placed_rects.append(rect)
+                    break
+        except OSError:
+            continue
+
+    return canvas

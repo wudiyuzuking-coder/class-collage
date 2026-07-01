@@ -152,7 +152,7 @@ def main() -> None:
         print(error)
         return
 
-    if len(image_paths) < 2:
+    if len(image_paths) < 1:
         print("请至少放入 2 张图片")
         return
 

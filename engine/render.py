@@ -9,7 +9,7 @@ from engine.decorate import create_photo_card
 from engine.filter import DEFAULT_FILTER, apply_filter, auto_enhance_image
 from engine.frame import apply_photo_frame, choose_photo_frame
 from engine.layout import ImageBox, get_image_layout
-from engine.sticker import add_random_stickers
+from engine.sticker import add_random_stickers, add_single_image_edge_stickers
 from engine.template import load_template
 from engine.text import (
     draw_centered_text,
@@ -33,6 +33,11 @@ FOOTER_AREA_HEIGHT = 120
 IMAGE_AREA_TOP = 150
 IMAGE_AREA_BOTTOM = 1180
 
+# 单图模式跟随原图尺寸，只在四周加一点留白，并把固定文案放在顶部。
+SINGLE_IMAGE_PADDING = 60
+SINGLE_IMAGE_TITLE_HEIGHT = 120
+SINGLE_IMAGE_TEXT = "孩子们开始上课啦"
+
 
 def _create_canvas(template: dict) -> Image.Image:
     """创建画布：优先使用模板背景图，失败时回退纯色背景。"""
@@ -54,6 +59,7 @@ def _paste_cropped_image(
     auto_enhance: bool,
     photo_frame_path: Optional[Path],
     rotate_card: bool = False,
+    plain_image: bool = False,
 ) -> None:
     """读取图片、自动优化、应用滤镜、居中裁剪，并贴到指定区域。"""
     with Image.open(image_path) as source:
@@ -67,6 +73,10 @@ def _paste_cropped_image(
             method=Image.Resampling.LANCZOS,
             centering=(0.5, 0.5),
         )
+        if plain_image:
+            canvas.paste(cropped, (box.x, box.y))
+            return
+
         photo_card = create_photo_card(cropped, (box.width, box.height))
         if photo_frame_path is not None:
             photo_card = apply_photo_frame(photo_card, photo_frame_path)
@@ -125,6 +135,48 @@ def _apply_frame(canvas: Image.Image, template: dict) -> Image.Image:
     return canvas.convert("RGB")
 
 
+def _render_single_image_record(
+    image_path: Path,
+    output_path: Path,
+    template: dict,
+    filter_name: str,
+    auto_enhance: bool,
+    sticker_theme: Optional[str],
+) -> Path:
+    """单张图使用原图尺寸生成结果，不使用相框、贴纸、底部文案和画布边框。"""
+    with Image.open(image_path) as source:
+        source = ImageOps.exif_transpose(source).convert("RGB")
+        if auto_enhance:
+            source = auto_enhance_image(source)
+        source = apply_filter(source, filter_name)
+
+    canvas_width = source.width + SINGLE_IMAGE_PADDING * 2
+    canvas_height = source.height + SINGLE_IMAGE_TITLE_HEIGHT + SINGLE_IMAGE_PADDING
+    canvas = Image.new("RGB", (canvas_width, canvas_height), random_background_color(template))
+
+    draw_centered_text(
+        image=canvas,
+        text=SINGLE_IMAGE_TEXT,
+        box=(0, 0, canvas_width, SINGLE_IMAGE_TITLE_HEIGHT),
+        fill=random_title_color(template),
+        font_size=max(36, min(72, canvas_width // 12)),
+        randomize_font=True,
+    )
+    image_x = SINGLE_IMAGE_PADDING
+    image_y = SINGLE_IMAGE_TITLE_HEIGHT
+    canvas.paste(source, (image_x, image_y))
+    add_single_image_edge_stickers(
+        canvas=canvas,
+        theme_config=template,
+        image_rect=(image_x, image_y, image_x + source.width, image_y + source.height),
+        sticker_theme=sticker_theme,
+    )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(output_path)
+    return output_path
+
+
 def render_class_record(
     image_paths: list[Path],
     output_path: Path,
@@ -142,6 +194,16 @@ def render_class_record(
     # 超过 6 张时只取前 6 张，避免布局超出当前设计范围。
     selected_paths = image_paths[:6]
     template = load_template(theme)
+    if len(selected_paths) == 1:
+        return _render_single_image_record(
+            image_path=selected_paths[0],
+            output_path=output_path,
+            template=template,
+            filter_name=filter_name,
+            auto_enhance=auto_enhance,
+            sticker_theme=sticker_theme,
+        )
+
     canvas = _create_canvas(template)
 
     photo_boxes = get_image_layout(
@@ -151,9 +213,10 @@ def render_class_record(
         image_area_bottom=IMAGE_AREA_BOTTOM,
         layout_name=layout_name,
     )
+    is_single_image = len(selected_paths) == 1
     use_rotated_cards = len(selected_paths) >= 4
     photo_frame_dir = None
-    if not use_rotated_cards:
+    if not is_single_image and not use_rotated_cards:
         # 4 张及以上会随机倾斜照片卡片，关闭 PNG 照片相框，避免相框漏图或画面过挤。
         photo_frame_dir = _resolve_photo_frame_dir(
             template,
@@ -179,6 +242,7 @@ def render_class_record(
             auto_enhance,
             photo_frame_path,
             use_rotated_cards,
+            is_single_image,
         )
 
     add_random_stickers(canvas, template, photo_boxes, sticker_theme=sticker_theme)
@@ -195,7 +259,7 @@ def render_class_record(
 
     draw_centered_text(
         image=canvas,
-        text=subtitle or random_footer(template),
+        text=subtitle or ("孩子们开始上课啦" if is_single_image else random_footer(template)),
         box=(0, CANVAS_SIZE[1] - FOOTER_AREA_HEIGHT, CANVAS_SIZE[0], CANVAS_SIZE[1]),
         fill=random_subtitle_color(template),
         font_size=40,

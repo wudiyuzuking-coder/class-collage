@@ -19,6 +19,11 @@ LayoutItem = dict[str, int]
 # 画布中的图片内容区域：x=60~1020，y=150~1180，图片间距约 24px。
 # id 从 1 开始，渲染时会转换成从 0 开始的图片索引。
 LAYOUT_TEMPLATES: dict[int, dict[str, list[LayoutItem]]] = {
+    1: {
+        "full": [
+            {"id": 1, "x": 60, "y": 150, "w": 960, "h": 1030},
+        ],
+    },
     2: {
         "staggered": [
             {"id": 1, "x": 60, "y": 180, "w": 610, "h": 470},
@@ -73,18 +78,18 @@ LAYOUT_TEMPLATES: dict[int, dict[str, list[LayoutItem]]] = {
 
 def get_available_layouts(image_count: int) -> list[str]:
     """返回指定图片数量支持的布局名称。"""
-    count = min(max(image_count, 2), 6)
+    count = min(max(image_count, 1), 6)
     return list(LAYOUT_TEMPLATES.get(count, {}).keys())
 
 
 def get_all_layouts() -> dict[int, list[str]]:
     """返回 2~6 张图片支持的全部布局名称，供命令行展示。"""
-    return {count: get_available_layouts(count) for count in range(2, 7)}
+    return {count: get_available_layouts(count) for count in range(1, 7)}
 
 
 def get_layout(image_count: int, layout_name: str = "auto") -> list[LayoutItem]:
     """按图片数量和布局名返回布局矩形；auto 会随机选择当前数量的布局。"""
-    count = min(max(image_count, 2), 6)
+    count = min(max(image_count, 1), 6)
     layout_group = LAYOUT_TEMPLATES.get(count, {})
     if not layout_group:
         return []
